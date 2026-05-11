@@ -2,127 +2,166 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberCar Pro - Interfaz Real</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GT PUREQ Launcher</title>
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="data:application/manifest+json,{'name':'GT PUREQ','short_name':'GT PUREQ','start_url':'.','display':'standalone','background_color':'#000000','theme_color':'#00f3ff'}">
+
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    
     <style>
-        :root { --neon: #00f3ff; --purple: #a020f0; --bg: #000000; }
+        :root { --neon: #00f3ff; --purple: #bc13fe; --bg: #000000; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
         body {
             background: var(--bg); color: white; font-family: 'Orbitron', sans-serif;
             margin: 0; height: 100vh; display: grid;
-            grid-template-columns: 1fr 1.5fr 1fr; grid-template-rows: 1fr 100px;
-            gap: 20px; padding: 20px; overflow: hidden;
+            grid-template-columns: 1fr 1.3fr 1fr; grid-template-rows: 1fr 80px;
+            gap: 15px; padding: 15px; overflow: hidden;
         }
 
-        /* Estilo de Contenedores de la Imagen */
         .card {
-            border: 2px solid #333; border-radius: 30px;
-            background: rgba(20, 20, 20, 0.8); position: relative;
-            display: flex; flex-direction: column; padding: 20px;
-            box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1);
+            border: 1px solid #222; border-radius: 25px;
+            background: rgba(10, 10, 10, 0.9); position: relative;
+            display: flex; flex-direction: column; padding: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
-        /* Bordes Neón Curvos (Como en tu imagen) */
+        /* Bordes neón curvos como tu imagen */
         .card::before {
-            content: ""; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
-            border-radius: 30px; border: 2px solid transparent;
-            border-left: 4px solid var(--neon); border-bottom: 4px solid var(--neon);
-            pointer-events: none;
+            content: ""; position: absolute; top: -1px; left: -1px; right: -1px; bottom: -1px;
+            border-radius: 25px; border: 2px solid transparent;
+            border-left: 3px solid var(--neon); border-bottom: 3px solid var(--neon);
+            pointer-events: none; opacity: 0.7;
         }
+        .music-card::before { border-left: none; border-right: 3px solid var(--purple); border-top: 3px solid var(--purple); }
 
-        .right-card::before {
-            border-left: none; border-right: 4px solid var(--purple); border-top: 4px solid var(--purple);
+        /* Mapa */
+        #map { width: 100%; height: 100%; border-radius: 15px; filter: invert(90%) hue-rotate(180deg) brightness(0.7); }
+
+        /* Velocímetro */
+        .speed-container { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .gauge {
+            width: 280px; height: 140px; border: 4px solid transparent;
+            border-top: 5px solid var(--neon); border-left: 5px solid var(--neon);
+            border-right: 5px solid var(--purple); border-radius: 280px 280px 0 0;
+            display: flex; align-items: center; justify-content: center; position: relative;
         }
+        .speed-num { font-size: 5rem; font-family: 'Share Tech Mono'; text-shadow: 0 0 20px var(--neon); }
 
-        /* VELOCÍMETRO CIRCULAR */
-        .speed-gauge {
-            width: 300px; height: 150px; position: relative;
-            border-top: 6px solid var(--neon); border-left: 6px solid var(--neon);
-            border-right: 6px solid var(--purple); border-radius: 300px 300px 0 0;
-            display: flex; align-items: center; justify-content: center;
-            margin-top: 20px;
+        /* Música */
+        .album-art {
+            width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--purple);
+            margin: 10px auto; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 15px var(--purple); animation: rotate 10s linear infinite paused;
         }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .progress-wrap { width: 100%; height: 4px; background: #222; margin: 10px 0; border-radius: 2px; }
+        #p-bar { width: 0%; height: 100%; background: var(--purple); box-shadow: 0 0 8px var(--purple); }
 
-        .speed-number { font-size: 5.5rem; font-family: 'Share Tech Mono'; text-shadow: 0 0 30px white; }
-
-        /* MAPA */
-        #map { width: 100%; height: 100%; border-radius: 20px; filter: brightness(0.6) contrast(1.2); }
-
-        /* BARRA INFERIOR */
+        /* Dock */
         .dock {
-            grid-column: 1 / 4; display: flex; justify-content: center; align-items: center;
-            background: linear-gradient(0deg, rgba(0,243,255,0.2) 0%, transparent 100%);
-            clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 0% 100%);
-            gap: 80px;
+            grid-column: 1/4; background: rgba(0, 243, 255, 0.1);
+            clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);
+            display: flex; justify-content: space-around; align-items: center;
         }
-        .icon { font-size: 1.8rem; cursor: pointer; color: #aaa; transition: 0.3s; }
-        .icon:hover { color: var(--neon); transform: scale(1.2); }
-
+        .dock div { font-size: 1.5rem; cursor: pointer; color: var(--neon); }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <div style="margin-bottom: 10px; font-size: 0.9rem; text-align: center;">Navegación</div>
+        <div style="font-size: 0.7rem; text-align: center; margin-bottom: 5px;">NAVEGACIÓN</div>
         <div id="map"></div>
     </div>
 
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-        <div style="font-size: 1.2rem; margin-bottom: 10px;">Velocímetro</div>
-        <div class="speed-gauge">
-            <div class="speed-number" id="real-speed">00</div>
-        </div>
-        <div style="color: var(--neon); letter-spacing: 5px; margin-top: 10px;">KM/H</div>
-        <div id="clock" style="margin-top: 20px; font-size: 1.5rem; font-family: 'Share Tech Mono';">12:00:00</div>
+    <div class="speed-container">
+        <div style="font-size: 0.8rem; margin-bottom: 10px;">VELOCÍMETRO</div>
+        <div class="gauge"><div class="speed-num" id="speed-display">00</div></div>
+        <div style="color: var(--neon); font-size: 0.7rem; margin-top: 5px;">KM/H</div>
+        <div id="clock" style="font-family: 'Share Tech Mono'; font-size: 1.8rem; margin-top: 15px;">00:00:00</div>
+        <div id="date" style="font-size: 0.7rem; opacity: 0.6;">-- --- ----</div>
     </div>
 
-    <div class="card right-card">
-        <div style="text-align: center; font-size: 0.9rem;">Reproductor de música</div>
-        <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
-            <div style="width: 150px; height: 150px; border-radius: 50%; border: 4px solid var(--purple); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--purple);">
-                <span style="font-size: 3rem;">🎵</span>
-            </div>
+    <div class="card music-card">
+        <div style="font-size: 0.7rem; text-align: center;">REPRODUCTOR</div>
+        <div class="album-art" id="art">🎵</div>
+        <div id="t-title" style="font-size: 0.6rem; text-align: center; height: 30px; overflow: hidden; margin-top: 5px;">SIN MÚSICA</div>
+        <div class="progress-wrap"><div id="p-bar"></div></div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <button onclick="prevT()" style="background:none; border:none; color:white; font-size:1.2rem;">⏮</button>
+            <button id="btn-p" onclick="toggleP()" style="background:none; border:none; color:white; font-size:1.8rem;">▶</button>
+            <button onclick="nextT()" style="background:none; border:none; color:white; font-size:1.2rem;">⏭</button>
         </div>
-        <div style="display: flex; justify-content: space-around; padding: 10px;">
-            <span class="icon">⏮</span>
-            <span class="icon" id="play-trigger">▶</span>
-            <span class="icon">⏭</span>
-        </div>
+        <input type="file" id="f-in" hidden multiple accept="audio/*">
+        <button onclick="document.getElementById('f-in').click()" style="background:none; border:1px solid var(--purple); color:var(--purple); font-family:'Orbitron'; font-size:0.5rem; margin-top:10px; padding:5px; cursor:pointer;">📁 ESCANEAR MÚSICA</button>
     </div>
 
     <div class="dock">
-        <div class="icon">🏠</div>
-        <div class="icon">⣿</div>
-        <div class="icon">⚙</div>
+        <div onclick="location.reload()">🏠</div>
+        <div onclick="alert('Cajón de Apps')">⣿</div>
+        <div onclick="alert('Ajustes')">⚙</div>
     </div>
 
+    <audio id="player"></audio>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script>
-        // 1. RELOJ
+        // 1. RELOJ Y FECHA
         setInterval(() => {
-            document.getElementById('clock').innerText = new Date().toLocaleTimeString();
+            const n = new Date();
+            document.getElementById('clock').innerText = n.toLocaleTimeString();
+            document.getElementById('date').innerText = n.toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'short'}).toUpperCase();
         }, 1000);
 
-        // 2. MAPA CON BUSCADOR
+        // 2. MAPA
         var map = L.map('map', {zoomControl: false}).setView([-16.409, -71.537], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        L.Control.geocoder({ defaultMarkGeocode: true }).addTo(map);
 
-        // 3. VELOCÍMETRO GPS REAL (Requiere Permisos)
+        // 3. GPS REAL (MÉTODO PWA)
         if ("geolocation" in navigator) {
-            navigator.geolocation.watchPosition((pos) => {
-                // Convertir metros/segundo a KM/H
-                let speed = pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0;
-                document.getElementById('real-speed').innerText = speed.toString().padStart(2, '0');
-            }, (err) => {
-                console.warn("Error GPS: ", err);
-            }, { enableHighAccuracy: true });
-        } else {
-            alert("El GPS no está disponible en este dispositivo.");
+            navigator.geolocation.watchPosition(p => {
+                let s = p.coords.speed ? Math.round(p.coords.speed * 3.6) : 0;
+                document.getElementById('speed-display').innerText = s.toString().padStart(2, '0');
+            }, null, { enableHighAccuracy: true });
         }
+
+        // 4. MÚSICA LOCAL (ESCANEO)
+        const audio = document.getElementById('player');
+        const fIn = document.getElementById('f-in');
+        let playlist = [];
+        let index = 0;
+
+        fIn.onchange = (e) => {
+            playlist = Array.from(e.target.files);
+            if(playlist.length > 0) loadT(0);
+        };
+
+        function loadT(i) {
+            index = i;
+            document.getElementById('t-title').innerText = playlist[i].name.toUpperCase();
+            audio.src = URL.createObjectURL(playlist[i]);
+            audio.play();
+            document.getElementById('btn-p').innerText = "⏸";
+            document.getElementById('art').style.animationPlayState = "running";
+        }
+
+        function toggleP() {
+            if(audio.paused) { audio.play(); document.getElementById('btn-p').innerText = "⏸"; document.getElementById('art').style.animationPlayState = "running"; }
+            else { audio.pause(); document.getElementById('btn-p').innerText = "▶"; document.getElementById('art').style.animationPlayState = "paused"; }
+        }
+
+        function nextT() { index = (index + 1) % playlist.length; loadT(index); }
+        function prevT() { index = (index - 1 + playlist.length) % playlist.length; loadT(index); }
+
+        audio.ontimeupdate = () => {
+            const pct = (audio.currentTime / audio.duration) * 100;
+            document.getElementById('p-bar').style.width = pct + "%";
+        };
     </script>
 </body>
 </html>
