@@ -5,162 +5,190 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GT PUREQ Launcher</title>
     
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#000000">
-    <link rel="manifest" href="data:application/manifest+json,{'name':'GT PUREQ','short_name':'GT PUREQ','start_url':'.','display':'standalone','background_color':'#000000','theme_color':'#00f3ff'}">
+    <link rel="manifest" href="data:application/manifest+json,{'name':'GT PUREQ','short_name':'GT PUREQ','start_url':'.','display':'standalone','background_color':'#000000','theme_color':'#00f3ff','orientation':'landscape'}">
 
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
         :root { --neon: #00f3ff; --purple: #bc13fe; --bg: #000000; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         
         body {
-            background: var(--bg); color: white; font-family: 'Orbitron', sans-serif;
-            margin: 0; height: 100vh; display: grid;
-            grid-template-columns: 1fr 1.3fr 1fr; grid-template-rows: 1fr 80px;
-            gap: 15px; padding: 15px; overflow: hidden;
+            background: var(--bg);
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            height: 100vh;
+            width: 100vw;
+            display: grid;
+            grid-template-columns: 1fr 1.3fr 1fr;
+            grid-template-rows: 1fr 75px; /* Barra inferior ajustada */
+            gap: 15px;
+            padding: 15px;
+            overflow: hidden; /* Evita que aparezcan barras de desplazamiento */
         }
 
+        /* Paneles con bordes neón estilizados según tu imagen */
         .card {
-            border: 1px solid #222; border-radius: 25px;
-            background: rgba(10, 10, 10, 0.9); position: relative;
-            display: flex; flex-direction: column; padding: 15px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            border: 1px solid #222;
+            border-radius: 25px;
+            background: rgba(10, 10, 10, 0.95);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            box-shadow: inset 0 0 15px rgba(0, 243, 255, 0.05);
         }
 
-        /* Bordes neón curvos como tu imagen */
         .card::before {
             content: ""; position: absolute; top: -1px; left: -1px; right: -1px; bottom: -1px;
             border-radius: 25px; border: 2px solid transparent;
-            border-left: 3px solid var(--neon); border-bottom: 3px solid var(--neon);
-            pointer-events: none; opacity: 0.7;
+            border-left: 4px solid var(--neon); border-bottom: 4px solid var(--neon);
+            pointer-events: none;
         }
-        .music-card::before { border-left: none; border-right: 3px solid var(--purple); border-top: 3px solid var(--purple); }
 
-        /* Mapa */
-        #map { width: 100%; height: 100%; border-radius: 15px; filter: invert(90%) hue-rotate(180deg) brightness(0.7); }
+        .music-card::before {
+            border-left: none; border-right: 4px solid var(--purple); border-top: 4px solid var(--purple);
+        }
 
-        /* Velocímetro */
-        .speed-container { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .gauge {
-            width: 280px; height: 140px; border: 4px solid transparent;
+        /* Mapa Interactivo */
+        #map { width: 100%; height: 100%; border-radius: 18px; filter: invert(90%) hue-rotate(180deg) brightness(0.8); }
+
+        /* Centro: Velocímetro y Relojes */
+        .telemetry { display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; }
+        
+        .gauge-wrap {
+            width: 260px; height: 130px; 
             border-top: 5px solid var(--neon); border-left: 5px solid var(--neon);
-            border-right: 5px solid var(--purple); border-radius: 280px 280px 0 0;
+            border-right: 5px solid var(--purple); border-radius: 260px 260px 0 0;
             display: flex; align-items: center; justify-content: center; position: relative;
         }
-        .speed-num { font-size: 5rem; font-family: 'Share Tech Mono'; text-shadow: 0 0 20px var(--neon); }
+        
+        .speed-val { font-size: 5rem; font-family: 'Share Tech Mono'; text-shadow: 0 0 20px var(--neon); line-height: 1; }
 
-        /* Música */
-        .album-art {
-            width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--purple);
-            margin: 10px auto; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 0 15px var(--purple); animation: rotate 10s linear infinite paused;
+        /* Reproductor de Música Local */
+        .album-disk {
+            width: 110px; height: 110px; border-radius: 50%; border: 3px solid var(--purple);
+            margin: 5px auto; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 20px var(--purple);
         }
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .progress-wrap { width: 100%; height: 4px; background: #222; margin: 10px 0; border-radius: 2px; }
-        #p-bar { width: 0%; height: 100%; background: var(--purple); box-shadow: 0 0 8px var(--purple); }
 
-        /* Dock */
-        .dock {
-            grid-column: 1/4; background: rgba(0, 243, 255, 0.1);
-            clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);
-            display: flex; justify-content: space-around; align-items: center;
+        .p-bar-container { width: 100%; height: 5px; background: #222; border-radius: 3px; margin: 12px 0; overflow: hidden; }
+        #p-fill { width: 0%; height: 100%; background: var(--purple); box-shadow: 0 0 10px var(--purple); }
+
+        /* Barra Inferior Trapezoidal */
+        .bottom-dock {
+            grid-column: 1 / 4;
+            background: linear-gradient(0deg, rgba(0, 243, 255, 0.15) 0%, transparent 100%);
+            clip-path: polygon(8% 0%, 92% 0%, 100% 100%, 0% 100%);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid var(--neon);
         }
-        .dock div { font-size: 1.5rem; cursor: pointer; color: var(--neon); }
+
+        .dock-btn { font-size: 1.4rem; color: var(--neon); cursor: pointer; display: flex; flex-direction: column; align-items: center; font-size: 0.7rem; gap: 5px; }
+        .dock-btn span { font-size: 1.6rem; }
     </style>
 </head>
 <body>
 
     <div class="card">
-        <div style="font-size: 0.7rem; text-align: center; margin-bottom: 5px;">NAVEGACIÓN</div>
         <div id="map"></div>
     </div>
 
-    <div class="speed-container">
-        <div style="font-size: 0.8rem; margin-bottom: 10px;">VELOCÍMETRO</div>
-        <div class="gauge"><div class="speed-num" id="speed-display">00</div></div>
-        <div style="color: var(--neon); font-size: 0.7rem; margin-top: 5px;">KM/H</div>
-        <div id="clock" style="font-family: 'Share Tech Mono'; font-size: 1.8rem; margin-top: 15px;">00:00:00</div>
-        <div id="date" style="font-size: 0.7rem; opacity: 0.6;">-- --- ----</div>
+    <div class="telemetry">
+        <div style="font-size: 0.8rem; letter-spacing: 2px;">VELOCÍMETRO</div>
+        <div class="gauge-wrap">
+            <div class="speed-val" id="gps-speed">00</div>
+        </div>
+        <div style="color: var(--neon); font-size: 0.7rem;">KM/H</div>
+        
+        <div id="digital-clock" style="font-family: 'Share Tech Mono'; font-size: 1.8rem; color: white;">00:00:00</div>
+        <div id="calendar" style="font-size: 0.7rem; opacity: 0.7; letter-spacing: 1px;">-- MAYO 2026</div>
     </div>
 
     <div class="card music-card">
-        <div style="font-size: 0.7rem; text-align: center;">REPRODUCTOR</div>
-        <div class="album-art" id="art">🎵</div>
-        <div id="t-title" style="font-size: 0.6rem; text-align: center; height: 30px; overflow: hidden; margin-top: 5px;">SIN MÚSICA</div>
-        <div class="progress-wrap"><div id="p-bar"></div></div>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <button onclick="prevT()" style="background:none; border:none; color:white; font-size:1.2rem;">⏮</button>
-            <button id="btn-p" onclick="toggleP()" style="background:none; border:none; color:white; font-size:1.8rem;">▶</button>
-            <button onclick="nextT()" style="background:none; border:none; color:white; font-size:1.2rem;">⏭</button>
+        <div style="font-size: 0.7rem; text-align: center; margin-bottom: 5px;">AUDIO LOCAL</div>
+        <div class="album-disk">🎵</div>
+        <div id="song-name" style="font-size: 0.6rem; text-align: center; height: 30px; margin-top: 8px;">SIN ARCHIVOS</div>
+        
+        <div class="p-bar-container"><div id="p-fill"></div></div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 0 10px;">
+            <button onclick="pNext(-1)" style="background:none; border:none; color:white; font-size:1.3rem;">⏮</button>
+            <button id="play-btn" onclick="pToggle()" style="background:none; border:none; color:white; font-size:2rem;">▶</button>
+            <button onclick="pNext(1)" style="background:none; border:none; color:white; font-size:1.3rem;">⏭</button>
         </div>
-        <input type="file" id="f-in" hidden multiple accept="audio/*">
-        <button onclick="document.getElementById('f-in').click()" style="background:none; border:1px solid var(--purple); color:var(--purple); font-family:'Orbitron'; font-size:0.5rem; margin-top:10px; padding:5px; cursor:pointer;">📁 ESCANEAR MÚSICA</button>
+        
+        <input type="file" id="music-input" hidden multiple accept="audio/*">
+        <button onclick="document.getElementById('music-input').click()" style="margin-top:10px; background:none; border:1px solid var(--purple); color:var(--purple); font-family:'Orbitron'; font-size:0.5rem; padding:6px; cursor:pointer; width:100%;">📁 CARGAR BIBLIOTECA</button>
     </div>
 
-    <div class="dock">
-        <div onclick="location.reload()">🏠</div>
-        <div onclick="alert('Cajón de Apps')">⣿</div>
-        <div onclick="alert('Ajustes')">⚙</div>
+    <div class="bottom-dock">
+        <div class="dock-btn" onclick="location.reload()"><span>🏠</span>INICIO</div>
+        <div class="dock-btn"><span>⣿</span>APPS</div>
+        <div class="dock-btn"><span>⚙</span>AJUSTES</div>
     </div>
 
-    <audio id="player"></audio>
+    <audio id="audio-core"></audio>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // 1. RELOJ Y FECHA
+        // --- RELOJ ---
         setInterval(() => {
-            const n = new Date();
-            document.getElementById('clock').innerText = n.toLocaleTimeString();
-            document.getElementById('date').innerText = n.toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'short'}).toUpperCase();
+            const now = new Date();
+            document.getElementById('digital-clock').innerText = now.toLocaleTimeString();
+            document.getElementById('calendar').innerText = now.toLocaleDateString('es-ES', {weekday:'long', day:'numeric', month:'long'}).toUpperCase();
         }, 1000);
 
-        // 2. MAPA
+        // --- MAPA ---
         var map = L.map('map', {zoomControl: false}).setView([-16.409, -71.537], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
-        // 3. GPS REAL (MÉTODO PWA)
+        // --- GPS REAL (Solo funciona si permites ubicación en la tablet) ---
         if ("geolocation" in navigator) {
-            navigator.geolocation.watchPosition(p => {
-                let s = p.coords.speed ? Math.round(p.coords.speed * 3.6) : 0;
-                document.getElementById('speed-display').innerText = s.toString().padStart(2, '0');
+            navigator.geolocation.watchPosition(pos => {
+                let speed = pos.coords.speed ? Math.round(pos.coords.speed * 3.6) : 0;
+                document.getElementById('gps-speed').innerText = speed.toString().padStart(2, '0');
             }, null, { enableHighAccuracy: true });
         }
 
-        // 4. MÚSICA LOCAL (ESCANEO)
-        const audio = document.getElementById('player');
-        const fIn = document.getElementById('f-in');
-        let playlist = [];
-        let index = 0;
+        // --- MÚSICA LOCAL ---
+        const audio = document.getElementById('audio-core');
+        const input = document.getElementById('music-input');
+        let files = [];
+        let cur = 0;
 
-        fIn.onchange = (e) => {
-            playlist = Array.from(e.target.files);
-            if(playlist.length > 0) loadT(0);
+        input.onchange = (e) => {
+            files = Array.from(e.target.files);
+            if(files.length > 0) playTrack(0);
         };
 
-        function loadT(i) {
-            index = i;
-            document.getElementById('t-title').innerText = playlist[i].name.toUpperCase();
-            audio.src = URL.createObjectURL(playlist[i]);
+        function playTrack(i) {
+            cur = i;
+            document.getElementById('song-name').innerText = files[i].name.toUpperCase();
+            audio.src = URL.createObjectURL(files[i]);
             audio.play();
-            document.getElementById('btn-p').innerText = "⏸";
-            document.getElementById('art').style.animationPlayState = "running";
+            document.getElementById('play-btn').innerText = "⏸";
         }
 
-        function toggleP() {
-            if(audio.paused) { audio.play(); document.getElementById('btn-p').innerText = "⏸"; document.getElementById('art').style.animationPlayState = "running"; }
-            else { audio.pause(); document.getElementById('btn-p').innerText = "▶"; document.getElementById('art').style.animationPlayState = "paused"; }
+        function pToggle() {
+            if(audio.paused) { audio.play(); document.getElementById('play-btn').innerText = "⏸"; }
+            else { audio.pause(); document.getElementById('play-btn').innerText = "▶"; }
         }
 
-        function nextT() { index = (index + 1) % playlist.length; loadT(index); }
-        function prevT() { index = (index - 1 + playlist.length) % playlist.length; loadT(index); }
+        function pNext(step) {
+            cur = (cur + step + files.length) % files.length;
+            if(files.length > 0) playTrack(cur);
+        }
 
         audio.ontimeupdate = () => {
-            const pct = (audio.currentTime / audio.duration) * 100;
-            document.getElementById('p-bar').style.width = pct + "%";
+            document.getElementById('p-fill').style.width = (audio.currentTime / audio.duration * 100) + "%";
         };
     </script>
 </body>
