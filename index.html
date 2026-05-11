@@ -3,165 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberCar Pro - Fusión Final</title>
+    <title>CyberCar Launcher - Versión Final</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { --neon: #00f3ff; --warn: #ff8c00; --bg: #050505; }
+        :root { --neon: #00f3ff; --warn: #ff8c00; --bg: #050505; --glass: rgba(0, 243, 255, 0.08); }
+        
         body {
             background: var(--bg); color: white; font-family: 'Orbitron', sans-serif;
             margin: 0; height: 100vh; display: grid;
-            grid-template-columns: 1fr 1.2fr 1fr; grid-template-rows: 1fr 100px;
+            grid-template-columns: 1fr 1.3fr 1fr; grid-template-rows: 1fr 90px;
             gap: 15px; padding: 15px; overflow: hidden;
         }
 
         .panel {
             border: 2px solid var(--neon); border-radius: 20px;
-            background: rgba(0, 243, 255, 0.05); display: flex;
+            background: var(--glass); display: flex;
             flex-direction: column; align-items: center; padding: 15px;
-            position: relative; overflow: hidden;
+            position: relative; backdrop-filter: blur(10px);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
         }
 
-        /* --- MAPA (IZQUIERDA) --- */
-        #map { width: 100%; height: 100%; border-radius: 10px; filter: invert(90%) hue-rotate(180deg) brightness(0.8); }
+        /* --- IZQUIERDA: MAPA + CLIMA --- */
+        #map { width: 100%; height: 75%; border-radius: 15px; margin-top: 10px; filter: invert(90%) hue-rotate(180deg); }
+        .clima-box { width: 100%; display: flex; justify-content: space-between; color: var(--neon); font-family: 'Share Tech Mono'; }
 
-        /* --- RELOJ ANALÓGICO Y BRÚJULA (CENTRO) --- */
+        /* --- CENTRO: TELEMETRÍA COMPLETA --- */
+        .speed-val { font-size: 4rem; text-shadow: 0 0 20px var(--neon); font-family: 'Share Tech Mono'; }
+        
         .analog-clock {
-            width: 180px; height: 180px; border: 3px solid var(--neon);
-            border-radius: 50%; position: relative; margin-top: 10px;
-            box-shadow: 0 0 15px var(--neon);
+            width: 160px; height: 160px; border: 3px solid var(--neon);
+            border-radius: 50%; position: relative; margin: 10px 0;
+            box-shadow: 0 0 20px var(--neon);
         }
-        .hand {
-            position: absolute; bottom: 50%; left: 50%;
-            transform-origin: bottom; background: var(--neon);
-            border-radius: 5px;
-        }
-        .hour-hand { width: 4px; height: 50px; }
-        .min-hand { width: 2px; height: 70px; }
-        .compass-center {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%); color: var(--warn);
-            font-size: 1.5rem; transition: transform 0.2s;
+        .hand { position: absolute; bottom: 50%; left: 50%; transform-origin: bottom; background: var(--neon); border-radius: 4px; }
+        .hour-hand { width: 4px; height: 45px; z-index: 2; }
+        .min-hand { width: 2px; height: 65px; z-index: 1; }
+        .compass-rose {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: var(--warn); font-size: 1.8rem; font-weight: bold;
         }
 
-        /* --- VELOCÍMETRO (ARRIBA DEL RELOJ) --- */
-        .speed-box { text-align: center; margin-bottom: 5px; }
-        .speed-num { font-size: 3.5rem; font-family: 'Share Tech Mono'; text-shadow: 0 0 20px var(--neon); }
+        /* --- DERECHA: REPRODUCTOR --- */
+        .track-display { font-size: 0.7rem; color: var(--neon); text-align: center; height: 40px; margin-bottom: 10px; overflow: hidden; }
+        .progress-cont { width: 100%; height: 6px; background: #222; border-radius: 3px; margin: 15px 0; }
+        #progress-bar { width: 0%; height: 100%; background: var(--neon); box-shadow: 0 0 10px var(--neon); }
+        .btn-music { background: none; border: 1px solid var(--neon); color: var(--neon); padding: 12px; cursor: pointer; border-radius: 50%; width: 55px; height: 55px; font-size: 1.2rem; }
 
-        /* --- MÚSICA (DERECHA) --- */
-        .track-info { font-size: 0.7rem; text-align: center; margin: 10px 0; color: var(--neon); height: 35px; }
-        .music-btn {
-            background: none; border: 1px solid var(--neon); color: var(--neon);
-            padding: 10px; margin: 5px; cursor: pointer; border-radius: 5px;
+        /* --- BARRA INFERIOR (TU DISEÑO TRAPEZOIDAL) --- */
+        .bottom-nav { grid-column: 1 / 4; display: flex; justify-content: center; align-items: flex-end; }
+        .trapezoid {
+            background: var(--neon); width: 85%; height: 65px;
+            clip-path: polygon(4% 0%, 96% 0%, 100% 100%, 0% 100%);
+            display: flex; justify-content: space-around; align-items: center; color: #000;
         }
-
-        /* --- BARRA INFERIOR --- */
-        .bottom-nav {
-            grid-column: 1 / 4; display: flex; justify-content: center; align-items: flex-end;
-        }
-        .trapezoid-bar {
-            background: var(--neon); width: 80%; height: 60px;
-            clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);
-            display: flex; justify-content: space-around; align-items: center; color: black;
-        }
-        .nav-btn { cursor: pointer; font-weight: bold; text-align: center; }
+        .nav-item { cursor: pointer; font-weight: 700; text-align: center; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
     <div class="panel">
+        <div class="clima-box">
+            <span>AREQUIPA</span>
+            <span id="temp-val">21°C</span>
+        </div>
         <div id="map"></div>
     </div>
 
     <div class="panel" style="border:none; background:none;">
-        <div class="speed-box">
-            <div class="speed-num" id="speed">00</div>
-            <div style="font-size: 0.7rem; color: var(--warn);">KM/H</div>
+        <div id="digital-clock" style="font-family:'Share Tech Mono'; color:var(--neon); font-size: 1.5rem;">00:00:00</div>
+        
+        <div style="text-align:center;">
+            <div class="speed-val" id="speed-num">00</div>
+            <div style="font-size:0.7rem; color:var(--warn); letter-spacing:4px;">KM/H</div>
         </div>
 
         <div class="analog-clock">
-            <div class="hand hour-hand" id="hour-h"></div>
-            <div class="hand min-hand" id="min-h"></div>
-            <div class="compass-center" id="compass">N</div>
-            <div style="position: absolute; top: 5px; left: 50%; transform: translateX(-50%); font-size: 0.6rem;">0°</div>
+            <div class="hand hour-hand" id="h-ptr"></div>
+            <div class="hand min-hand" id="m-ptr"></div>
+            <div class="compass-rose" id="comp-ptr">N</div>
         </div>
-        <div id="date-display" style="margin-top: 15px; font-size: 0.9rem;">-- MAY 2026</div>
+
+        <div id="full-date" style="font-size: 0.8rem; margin-top: 5px;">LUNES, 11 MAYO 2026</div>
     </div>
 
     <div class="panel">
-        <p style="font-size: 0.8rem;">REPRODUCTOR LOCAL</p>
-        <div class="track-info" id="t-info">LISTA VACÍA</div>
-        <input type="file" id="music-load" hidden multiple accept="audio/*">
-        <button class="music-btn" onclick="document.getElementById('music-load').click()">📁 CARGAR MÚSICA</button>
-        <div style="display: flex; gap: 10px;">
-            <button class="music-btn" id="p-play">▶</button>
-            <button class="music-btn" id="p-next">⏭</button>
+        <p style="font-size: 0.8rem; margin: 0;">AUDIO LOCAL</p>
+        <div class="track-display" id="track-name">SIN ARCHIVOS</div>
+        
+        <div class="progress-cont"><div id="progress-bar"></div></div>
+
+        <div style="display: flex; gap: 15px;">
+            <button class="btn-music" id="m-prev">⏮</button>
+            <button class="btn-music" id="m-play">▶</button>
+            <button class="btn-music" id="m-next">⏭</button>
         </div>
-        <audio id="main-player"></audio>
+
+        <input type="file" id="music-file" hidden multiple accept="audio/*">
+        <button onclick="document.getElementById('music-file').click()" style="margin-top:20px; background:none; border:1px solid var(--neon); color:var(--neon); font-family:'Orbitron'; padding:8px 15px; cursor:pointer; font-size:0.7rem;">📁 CARGAR BIBLIOTECA</button>
+        <audio id="audio-player"></audio>
     </div>
 
     <div class="bottom-nav">
-        <div class="trapezoid-bar">
-            <div class="nav-btn" onclick="location.reload()">🏠<br>INICIO</div>
-            <div class="nav-btn">⣿<br>APPS</div>
-            <div class="nav-btn">⚙<br>SETUP</div>
+        <div class="trapezoid">
+            <div class="nav-item" onclick="location.reload()">🏠<br>INICIO</div>
+            <div class="nav-item" onclick="alert('Abriendo Aplicaciones...')">⣿<br>APPS</div>
+            <div class="nav-item" onclick="alert('Configuración de Interfaz')">⚙<br>AJUSTES</div>
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // 1. MAPA
-        var map = L.map('map').setView([-16.409, -71.537], 14); // Coordenadas de Arequipa
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-        // 2. RELOJ ANALÓGICO
-        function updateClock() {
+        // --- RELOJES Y FECHA ---
+        function updateAllTime() {
             const now = new Date();
+            // Digital
+            document.getElementById('digital-clock').innerText = now.toLocaleTimeString();
+            // Analógico
             const h = now.getHours() % 12;
             const m = now.getMinutes();
-            const s = now.getSeconds();
-            document.getElementById('hour-h').style.transform = `translateX(-50%) rotate(${h * 30 + m/2}deg)`;
-            document.getElementById('min-h').style.transform = `translateX(-50%) rotate(${m * 6}deg)`;
-            document.getElementById('date-display').innerText = now.toLocaleDateString('es-ES', {day:'2-digit', month:'short', year:'numeric'}).toUpperCase();
+            document.getElementById('h-ptr').style.transform = `translateX(-50%) rotate(${h * 30 + m/2}deg)`;
+            document.getElementById('m-ptr').style.transform = `translateX(-50%) rotate(${m * 6}deg)`;
+            // Fecha
+            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            document.getElementById('full-date').innerText = now.toLocaleDateString('es-ES', options).toUpperCase();
         }
-        setInterval(updateClock, 1000);
+        setInterval(updateAllTime, 1000);
 
-        // 3. BRÚJULA REAL (Requiere hardware compatible)
+        // --- MAPA ---
+        var map = L.map('map', {zoomControl: false}).setView([-16.409, -71.537], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        // --- BRÚJULA (SENSORES) ---
         window.addEventListener('deviceorientationabsolute', (e) => {
             if (e.alpha !== null) {
                 const heading = 360 - e.alpha;
-                document.getElementById('compass').style.transform = `translate(-50%, -50%) rotate(${heading}deg)`;
+                document.getElementById('comp-ptr').style.transform = `translate(-50%, -50%) rotate(${heading}deg)`;
             }
         });
 
-        // 4. MÚSICA LOCAL
-        const player = document.getElementById('main-player');
-        const loader = document.getElementById('music-load');
-        let playlist = [];
-        let current = 0;
+        // --- MÚSICA LOCAL MEJORADA ---
+        const player = document.getElementById('audio-player');
+        const fileIn = document.getElementById('music-file');
+        let list = [];
+        let curr = 0;
 
-        loader.onchange = (e) => {
-            playlist = Array.from(e.target.files);
-            if(playlist.length > 0) playTrack(0);
+        fileIn.onchange = (e) => {
+            list = Array.from(e.target.files);
+            if(list.length > 0) loadAndPlay(0);
         };
 
-        function playTrack(i) {
-            current = i;
-            document.getElementById('t-info').innerText = playlist[i].name;
-            player.src = URL.createObjectURL(playlist[i]);
+        function loadAndPlay(index) {
+            curr = index;
+            document.getElementById('track-name').innerText = list[index].name.toUpperCase();
+            player.src = URL.createObjectURL(list[index]);
             player.play();
-            document.getElementById('p-play').innerText = "⏸";
+            document.getElementById('m-play').innerText = "⏸";
         }
 
-        document.getElementById('p-play').onclick = () => {
-            if(player.paused) { player.play(); document.getElementById('p-play').innerText = "⏸"; }
-            else { player.pause(); document.getElementById('p-play').innerText = "▶"; }
+        document.getElementById('m-play').onclick = () => {
+            if(player.paused) { player.play(); document.getElementById('m-play').innerText = "⏸"; }
+            else { player.pause(); document.getElementById('m-play').innerText = "▶"; }
         };
 
-        // 5. SIMULADOR VELOCIDAD
+        document.getElementById('m-next').onclick = () => {
+            curr = (curr + 1) % list.length;
+            loadAndPlay(curr);
+        };
+
+        player.ontimeupdate = () => {
+            const pct = (player.currentTime / player.duration) * 100;
+            document.getElementById('progress-bar').style.width = pct + "%";
+        };
+
+        // --- SIMULACIÓN VELOCÍMETRO ---
         setInterval(() => {
-            document.getElementById('speed').innerText = Math.floor(Math.random() * 5) + 40;
-        }, 2000);
+            document.getElementById('speed-num').innerText = Math.floor(Math.random() * 3) + 45;
+        }, 3000);
     </script>
 </body>
 </html>
