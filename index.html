@@ -2,13 +2,15 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>CyberCar Launcher - Local Music</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberCar Launcher V2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
             --neon: #00f3ff;
             --warn: #ff8c00;
-            --bg: #0a0a0a;
+            --bg: #050505;
+            --glass: rgba(0, 243, 255, 0.1);
         }
 
         body {
@@ -18,138 +20,220 @@
             margin: 0;
             height: 100vh;
             display: grid;
-            /* Estructura de tu boceto: 3 columnas */
             grid-template-columns: 1fr 1.2fr 1fr;
-            grid-template-rows: 1fr 80px; /* Fila inferior para tu barra de sistema */
-            gap: 15px;
-            padding: 15px;
+            grid-template-rows: 1fr 100px;
+            gap: 20px;
+            padding: 20px;
             overflow: hidden;
         }
 
+        /* Paneles con efecto cristal y neón */
         .panel {
             border: 2px solid var(--neon);
-            border-radius: 20px;
-            background: rgba(0, 243, 255, 0.05);
+            border-radius: 25px;
+            background: var(--glass);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.15);
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            position: relative;
+            justify-content: space-between;
+            padding: 20px;
+            backdrop-filter: blur(5px);
         }
 
-        /* PANEL IZQUIERDO: Navegación */
-        #nav-panel { border-color: var(--neon); }
-
-        /* PANEL CENTRAL: Velocímetro y Brújula (Tu diseño) */
-        .gauge-container {
-            text-align: center;
-        }
-        .speed-arc {
-            width: 200px;
-            height: 100px;
-            border: 5px solid var(--neon);
-            border-bottom: none;
-            border-radius: 100px 100px 0 0;
+        /* Reloj y Clima Superior */
+        .top-info {
             display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            margin-bottom: 10px;
-        }
-        .speed-value { font-size: 3rem; text-shadow: 0 0 15px var(--neon); }
-
-        /* PANEL DERECHO: Música Local */
-        .music-controls button {
-            background: none;
-            border: 1px solid var(--neon);
+            justify-content: space-between;
+            width: 100%;
+            font-family: 'Share Tech Mono', monospace;
             color: var(--neon);
-            padding: 10px 20px;
-            margin: 5px;
-            cursor: pointer;
-            font-family: 'Orbitron';
         }
 
-        /* BARRA INFERIOR (Tu diseño de trapecio) */
-        .bottom-bar {
+        /* Velocímetro Central mejorado */
+        .speedometer {
+            position: relative;
+            width: 250px;
+            height: 150px;
+            border: 8px solid transparent;
+            border-top: 8px solid var(--neon);
+            border-radius: 150px 150px 0 0;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 10px var(--neon); }
+            50% { box-shadow: 0 0 25px var(--neon); }
+            100% { box-shadow: 0 0 10px var(--neon); }
+        }
+
+        .speed-digit {
+            font-size: 5rem;
+            line-height: 1;
+            text-shadow: 0 0 30px var(--neon);
+        }
+
+        /* Reproductor de música */
+        .music-ui { width: 100%; text-align: center; }
+        .progress-bar {
+            width: 100%;
+            height: 5px;
+            background: #333;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        #progress { width: 0%; height: 100%; background: var(--neon); box-shadow: 0 0 10px var(--neon); }
+
+        /* Barra Inferior Funcional */
+        .bottom-nav {
             grid-column: 1 / 4;
             background: var(--neon);
-            color: black;
-            clip-path: polygon(5% 0%, 95% 0%, 100% 100%, 0% 100%);
+            clip-path: polygon(3% 0%, 97% 0%, 100% 100%, 0% 100%);
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 50px;
+            gap: 60px;
+            transition: 0.3s;
         }
 
-        .icon-btn { font-weight: bold; font-size: 1.2rem; }
+        .nav-item {
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .nav-item:active { transform: scale(0.9); }
+
+        .btn-round {
+            background: transparent;
+            border: 2px solid var(--neon);
+            color: var(--neon);
+            border-radius: 50%;
+            width: 50px; height: 50px;
+            cursor: pointer;
+            font-size: 1.5rem;
+        }
+
     </style>
 </head>
 <body>
 
-    <div class="panel" id="nav-panel">
-        <p>NAVEGACIÓN</p>
-        <div style="font-size: 0.7rem; color: var(--neon)">GOOGLE MAPS MODE</div>
+    <div class="panel">
+        <div class="top-info">
+            <span id="temp">22°C</span>
+            <span id="city">AREQUIPA</span>
+        </div>
+        <div style="flex-grow: 1; display: flex; align-items: center; color: var(--neon); opacity: 0.5;">
+            [ MODO MAPA ACTIVO ]
+        </div>
+        <button class="btn-round" onclick="window.open('https://www.google.com/maps')">🧭</button>
     </div>
 
-    <div class="panel" style="border:none; background:none;">
-        <div class="gauge-container">
-            <div class="speed-arc">
-                <div class="speed-value">00</div>
-            </div>
-            <div style="color:var(--warn)">KM/H</div>
+    <div class="panel" style="border: none; background: none; box-shadow: none;">
+        <div class="top-info" style="font-size: 1.5rem; justify-content: center;">
+            <span id="live-clock">00:00:00</span>
         </div>
         
-        <div style="margin-top: 30px; text-align: center;">
-            <div style="border: 1px solid white; border-radius: 50%; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
-                N
-            </div>
-            <p id="fecha" style="font-size: 0.8rem;">11 MAY 2026</p>
+        <div class="speedometer">
+            <div class="speed-digit" id="speed">00</div>
+            <div style="color: var(--warn); font-size: 0.8rem; letter-spacing: 3px;">KM/H</div>
+        </div>
+
+        <div style="text-align: center;">
+            <div style="font-size: 1.2rem; color: var(--neon);" id="live-date">LUNES 11 MAY</div>
+            <div style="font-size: 0.8rem; opacity: 0.7;">BRÚJULA: <span id="dir">NNE</span></div>
         </div>
     </div>
 
     <div class="panel">
-        <p>MÚSICA</p>
-        <div id="track-name" style="font-size: 0.8rem; margin: 10px;">Selecciona archivos...</div>
-        <input type="file" id="file-input" multiple accept="audio/*" style="display: none;">
-        <div class="music-controls">
-            <button onclick="document.getElementById('file-input').click()">📁 CARGAR</button><br>
-            <button id="prev">⏮</button>
-            <button id="play">▶</button>
-            <button id="next">⏭</button>
+        <div class="music-ui">
+            <div id="song-title" style="font-size: 0.7rem; height: 30px; overflow: hidden;">SIN PISTA SELECCIONADA</div>
+            <div class="progress-bar"><div id="progress"></div></div>
+            <input type="file" id="loader" hidden multiple accept="audio/*">
+            <div style="display: flex; justify-content: space-around; align-items: center;">
+                <button class="btn-round" id="prev" style="width:40px; height:40px; font-size: 1rem;">⏮</button>
+                <button class="btn-round" id="play-btn">▶</button>
+                <button class="btn-round" id="next" style="width:40px; height:40px; font-size: 1rem;">⏭</button>
+            </div>
+            <button onclick="document.getElementById('loader').click()" style="margin-top: 15px; background: none; border: 1px solid var(--neon); color: var(--neon); font-family: 'Orbitron'; font-size: 0.6rem; padding: 5px 10px; cursor: pointer;">CARGAR CARPETA</button>
         </div>
-        <audio id="audio-player"></audio>
+        <audio id="player"></audio>
     </div>
 
-    <div class="bottom-bar">
-        <div class="icon-btn">🏠 HOME</div>
-        <div class="icon-btn">⣿ APPS</div>
-        <div class="icon-btn">⚙ SETTINGS</div>
+    <div class="bottom-nav">
+        <div class="nav-item" onclick="location.reload()">
+            <span>🏠</span><span>HOME</span>
+        </div>
+        <div class="nav-item" onclick="alert('Abriendo Cajón de Apps...')">
+            <span>⣿</span><span>APPS</span>
+        </div>
+        <div class="nav-item" onclick="changeColor()">
+            <span>⚙</span><span>COLOR</span>
+        </div>
     </div>
 
     <script>
-        const audio = document.getElementById('audio-player');
-        const fileInput = document.getElementById('file-input');
-        const trackName = document.getElementById('track-name');
-        let playlist = [];
-        let currentTrack = 0;
+        // Reloj y Fecha Real
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('live-clock').innerText = now.toLocaleTimeString();
+            const options = { weekday: 'long', day: 'numeric', month: 'short' };
+            document.getElementById('live-date').innerText = now.toLocaleDateString('es-ES', options).toUpperCase();
+        }
+        setInterval(updateTime, 1000);
 
-        fileInput.addEventListener('change', (e) => {
-            playlist = Array.from(e.target.files);
-            if (playlist.length > 0) playTrack(0);
-        });
+        // Música Local Funcional
+        const player = document.getElementById('player');
+        const loader = document.getElementById('loader');
+        const playBtn = document.getElementById('play-btn');
+        const progress = document.getElementById('progress');
+        let tracks = [];
+        let current = 0;
 
-        function playTrack(index) {
-            currentTrack = index;
-            const file = playlist[index];
-            trackName.innerText = file.name;
-            audio.src = URL.createObjectURL(file);
-            audio.play();
+        loader.onchange = (e) => {
+            tracks = Array.from(e.target.files);
+            if(tracks.length > 0) loadTrack(0);
+        };
+
+        function loadTrack(i) {
+            current = i;
+            document.getElementById('song-title').innerText = tracks[i].name.toUpperCase();
+            player.src = URL.createObjectURL(tracks[i]);
+            player.play();
+            playBtn.innerText = "⏸";
         }
 
-        document.getElementById('play').onclick = () => audio.paused ? audio.play() : audio.pause();
-        document.getElementById('next').onclick = () => {
-            currentTrack = (currentTrack + 1) % playlist.length;
-            playTrack(currentTrack);
+        playBtn.onclick = () => {
+            if(player.paused) { player.play(); playBtn.innerText = "⏸"; }
+            else { player.pause(); playBtn.innerText = "▶"; }
         };
+
+        player.ontimeupdate = () => {
+            const pct = (player.currentTime / player.duration) * 100;
+            progress.style.width = pct + "%";
+        };
+
+        // Función para el botón de Configuración (Cambia color de la interfaz)
+        function changeColor() {
+            const colors = ['#00f3ff', '#ff0055', '#00ff41', '#ffff00'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            document.documentElement.style.setProperty('--neon', randomColor);
+        }
+
+        // Simulación de Velocidad (Para que no esté en 0 siempre)
+        setInterval(() => {
+            const s = Math.floor(Math.random() * 5) + 60; // Simula entre 60-65 km/h
+            document.getElementById('speed').innerText = s;
+        }, 3000);
+
     </script>
 </body>
 </html>
