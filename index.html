@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberCar Launcher - Versión Final</title>
+    <title>CyberCar Pro V2.0 - Prueba de Conducción</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <style>
         :root { --neon: #00f3ff; --warn: #ff8c00; --bg: #050505; --glass: rgba(0, 243, 255, 0.08); }
         
@@ -24,11 +25,11 @@
             box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
         }
 
-        /* --- IZQUIERDA: MAPA + CLIMA --- */
+        /* --- IZQUIERDA: MAPA INTERACTIVO Y CLIMA --- */
         #map { width: 100%; height: 75%; border-radius: 15px; margin-top: 10px; filter: invert(90%) hue-rotate(180deg); }
         .clima-box { width: 100%; display: flex; justify-content: space-between; color: var(--neon); font-family: 'Share Tech Mono'; }
 
-        /* --- CENTRO: TELEMETRÍA COMPLETA --- */
+        /* --- CENTRO: TELEMETRÍA GPS --- */
         .speed-val { font-size: 4rem; text-shadow: 0 0 20px var(--neon); font-family: 'Share Tech Mono'; }
         
         .analog-clock {
@@ -113,26 +114,45 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script>
         // --- RELOJES Y FECHA ---
         function updateAllTime() {
             const now = new Date();
-            // Digital
             document.getElementById('digital-clock').innerText = now.toLocaleTimeString();
-            // Analógico
             const h = now.getHours() % 12;
             const m = now.getMinutes();
             document.getElementById('h-ptr').style.transform = `translateX(-50%) rotate(${h * 30 + m/2}deg)`;
             document.getElementById('m-ptr').style.transform = `translateX(-50%) rotate(${m * 6}deg)`;
-            // Fecha
             const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
             document.getElementById('full-date').innerText = now.toLocaleDateString('es-ES', options).toUpperCase();
         }
         setInterval(updateAllTime, 1000);
 
-        // --- MAPA ---
+        // --- MAPA INTERACTIVO CON BÚSQUEDA ---
         var map = L.map('map', {zoomControl: false}).setView([-16.409, -71.537], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        // Añadir buscador de direcciones
+        L.Control.geocoder().addTo(map);
+
+        // --- VELOCÍMETRO GPS REAL ---
+        const speedEl = document.getElementById('speed-num');
+        if ("geolocation" in navigator) {
+            navigator.geolocation.watchPosition((position) => {
+                const speedKmh = position.coords.speed ? (position.coords.speed * 3.6) : 0; // m/s a km/h
+                speedEl.innerText = speedKmh.toFixed(0).padStart(2, '0');
+            }, (error) => {
+                console.error("Error GPS:", error);
+                speedEl.innerText = "Error";
+            }, {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            });
+        } else {
+            speedEl.innerText = "--";
+            alert("Tu dispositivo no soporta GPS.");
+        }
 
         // --- BRÚJULA (SENSORES) ---
         window.addEventListener('deviceorientationabsolute', (e) => {
@@ -142,7 +162,7 @@
             }
         });
 
-        // --- MÚSICA LOCAL MEJORADA ---
+        // --- MÚSICA LOCAL ---
         const player = document.getElementById('audio-player');
         const fileIn = document.getElementById('music-file');
         let list = [];
@@ -175,11 +195,6 @@
             const pct = (player.currentTime / player.duration) * 100;
             document.getElementById('progress-bar').style.width = pct + "%";
         };
-
-        // --- SIMULACIÓN VELOCÍMETRO ---
-        setInterval(() => {
-            document.getElementById('speed-num').innerText = Math.floor(Math.random() * 3) + 45;
-        }, 3000);
     </script>
 </body>
 </html>
